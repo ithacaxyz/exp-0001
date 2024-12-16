@@ -31,16 +31,16 @@ contract TestContract is Test {
     }
 
     function testExpectArithmetic() public {
-    vm.expectRevert(stdError.arithmeticError);
-    test.arithmeticError(10);
-}
+        vm.expectRevert(stdError.arithmeticError);
+        test.arithmeticError(10);
+    }
 }
 
 contract ErrorsTest {
     function arithmeticError(uint256 a) public {
         a = a - 100;
     }
-} 
+}
 ```
 
 ### stdStorage
