@@ -1,0 +1,7 @@
+{
+  "recommendations": ["biomejs.biome", "JuanBlanco.solidity"],
+  "unwantedRecommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}
