@@ -1,12 +1,12 @@
+import { useAccount } from 'wagmi'
 import { AccountDetails } from './components/AccountDetails'
 import { InitializeAccount } from './components/InitializeAccount'
 import { Mint } from './components/Mint'
 import { Send } from './components/Send'
 import { client } from './config'
-import { Account } from './modules/Account'
 
 export function App() {
-  const { data: account } = Account.useQuery()
+  const { address } = useAccount()
 
   return (
     <div>
@@ -30,16 +30,16 @@ export function App() {
       </p>
       <InitializeAccount />
 
-      {account && (
+      {address && (
         <>
           <h2>2. Account</h2>
-          <AccountDetails account={account} />
+          <AccountDetails address={address} />
 
           <h2>3. Mint EXP (ERC20)</h2>
-          <Mint account={account} />
+          <Mint />
 
           <h2>4. Batch Send EXP</h2>
-          <Send account={account} />
+          <Send />
         </>
       )}
     </div>

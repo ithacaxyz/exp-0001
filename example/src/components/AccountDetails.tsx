@@ -1,15 +1,14 @@
-import { formatEther } from 'viem'
+import { type Address, formatEther } from 'viem'
 import { useReadContract } from 'wagmi'
-
 import { client } from '../config'
 import { ExperimentERC20 } from '../contracts'
-import type { Account } from '../modules/Account'
 
-export function AccountDetails({ account }: { account: Account.Account }) {
+export function AccountDetails({ address }: { address: Address }) {
   const { data: expBalance } = useReadContract({
-    ...ExperimentERC20,
+    abi: ExperimentERC20.abi,
+    address: ExperimentERC20.address[0],
     functionName: 'balanceOf',
-    args: [account.address],
+    args: [address],
     query: {
       refetchInterval: 1000,
     },
@@ -18,9 +17,9 @@ export function AccountDetails({ account }: { account: Account.Account }) {
   return (
     <div>
       <div>
-        <strong>Address:</strong> <code>{account.address}</code> {' · '}
+        <strong>Address:</strong> <code>{address}</code> {' · '}
         <a
-          href={`${client.chain.blockExplorers.default.url}/address/${account.address}`}
+          href={`${client.chain.blockExplorers.default.url}/address/${address}`}
           target="_blank"
           rel="noreferrer"
         >

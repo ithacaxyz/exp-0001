@@ -1,38 +1,42 @@
+import { Hooks } from 'porto/wagmi'
 import type { BaseError } from 'viem'
-
+import { useAccount, useConnectors } from 'wagmi'
 import { client } from '../config'
-import { Account } from '../modules/Account'
 
 export function InitializeAccount() {
-  const { data: hash, ...createMutation } = Account.useCreate({
-    client,
-  })
-  const loadMutation = Account.useLoad({ client })
+  const label = `exp-000q-${Math.floor(Date.now() / 1000)}`
 
-  const isPending = createMutation.isPending || loadMutation.isPending
-  const error = createMutation.error || loadMutation.error
+  const { address } = useAccount()
+  const connect = Hooks.useConnect()
+  const connectors = useConnectors()
+  const connector = connectors.find((x) => x.id === 'xyz.ithaca.porto')!
 
   return (
     <div>
       <button
-        disabled={isPending}
-        onClick={() => createMutation.mutate()}
+        disabled={connect.isPending}
+        onClick={() =>
+          connect.mutate({
+            connector,
+            createAccount: { label },
+          })
+        }
         type="button"
       >
         Register
       </button>
       <button
-        disabled={isPending}
-        onClick={() => loadMutation.mutate()}
+        disabled={connect.isPending}
+        onClick={() => connect.mutate({ connector })}
         type="button"
       >
         Sign In
       </button>
-      {hash && (
+      {address && (
         <p>
           Account created!{' '}
           <a
-            href={`${client.chain.blockExplorers.default.url}/tx/${hash}`}
+            href={`${client.chain.blockExplorers.default.url}/address/${address}`}
             target="_blank"
             rel="noreferrer"
           >
@@ -40,7 +44,11 @@ export function InitializeAccount() {
           </a>
         </p>
       )}
-      {error && <p>{(error as BaseError).shortMessage ?? error.message}</p>}
+      {connect.error && (
+        <p>
+          {(connect.error as BaseError).shortMessage ?? connect.error.message}
+        </p>
+      )}
     </div>
   )
 }

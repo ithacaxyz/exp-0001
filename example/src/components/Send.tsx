@@ -1,56 +1,46 @@
-import { encodeFunctionData, formatEther, parseEther } from 'viem'
+import { type Address, encodeFunctionData, formatEther, parseEther } from 'viem'
 import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts'
-import { useReadContracts, useWaitForTransactionReceipt } from 'wagmi'
-
+import { useAccount, useReadContracts } from 'wagmi'
+import { useSendCalls } from 'wagmi/experimental'
 import { client } from '../config'
 import { ExperimentERC20 } from '../contracts'
-import { Account } from '../modules/Account'
 
 const alice = privateKeyToAddress(generatePrivateKey())
 const bob = privateKeyToAddress(generatePrivateKey())
 
-export function Send({ account }: { account: Account.Account }) {
-  const balanceOf = {
-    ...ExperimentERC20,
-    functionName: 'balanceOf',
-  } as const
+export function Send() {
+  const { address } = useAccount()
 
   const { data: balances } = useReadContracts({
     contracts: [
       {
-        ...balanceOf,
-        args: [account.address],
+        abi: ExperimentERC20.abi,
+        address: ExperimentERC20.address[0] as Address,
+        functionName: 'balanceOf',
+        args: [address!],
       },
       {
-        ...balanceOf,
+        abi: ExperimentERC20.abi,
+        address: ExperimentERC20.address[0] as Address,
+        functionName: 'balanceOf',
         args: [alice],
       },
       {
-        ...balanceOf,
+        abi: ExperimentERC20.abi,
+        address: ExperimentERC20.address[0] as Address,
+        functionName: 'balanceOf',
         args: [bob],
       },
     ],
     query: {
-      refetchInterval: 1000,
+      enabled: !!address,
+      refetchInterval: 1_000,
     },
   })
 
-  const {
-    data: hash,
-    mutateAsync: execute,
-    isPending,
-  } = Account.useExecute({
-    client,
-  })
+  const send = useSendCalls()
 
-  const { data: receipt, ...receiptQuery } = useWaitForTransactionReceipt({
-    hash,
-  })
-
-  if (!balances) return null
-
-  const [selfBalance, aliceBalance, bobBalance] = balances
-
+  const [selfBalance, aliceBalance, bobBalance] = balances || []
   return (
     <form
       onSubmit={async (e) => {
@@ -60,11 +50,10 @@ export function Send({ account }: { account: Account.Account }) {
         const aliceValue = formData.get('value.alice') as string
         const bobValue = formData.get('value.bob') as string
 
-        await execute({
-          account,
+        send.sendCalls({
           calls: [
             {
-              to: ExperimentERC20.address,
+              to: ExperimentERC20.address[0],
               data: encodeFunctionData({
                 abi: ExperimentERC20.abi,
                 functionName: 'transfer',
@@ -72,7 +61,7 @@ export function Send({ account }: { account: Account.Account }) {
               }),
             },
             {
-              to: ExperimentERC20.address,
+              to: ExperimentERC20.address[0],
               data: encodeFunctionData({
                 abi: ExperimentERC20.abi,
                 functionName: 'transfer',
@@ -99,12 +88,12 @@ export function Send({ account }: { account: Account.Account }) {
         <tbody>
           <tr>
             <td>Alice</td>
-            <td align="right">{formatExp(aliceBalance.result)} EXP</td>
+            <td align="right">{formatExp(aliceBalance?.result)} EXP</td>
             <td align="right">
               <input
-                disabled={selfBalance.result === 0n || isPending}
+                disabled={selfBalance?.result === 0n || send.isPending}
                 required
-                max={formatExp(selfBalance.result)}
+                max={formatExp(selfBalance?.result)}
                 step="0.000001"
                 type="number"
                 name="value.alice"
@@ -114,12 +103,12 @@ export function Send({ account }: { account: Account.Account }) {
           </tr>
           <tr>
             <td>Bob</td>
-            <td align="right">{formatExp(bobBalance.result)} EXP</td>
+            <td align="right">{formatExp(bobBalance?.result)} EXP</td>
             <td align="right">
               <input
-                disabled={selfBalance.result === 0n || isPending}
+                disabled={selfBalance?.result === 0n || send.isPending}
                 required
-                max={formatExp(selfBalance.result)}
+                max={formatExp(selfBalance?.result)}
                 step="0.000001"
                 type="number"
                 name="value.bob"
@@ -129,10 +118,10 @@ export function Send({ account }: { account: Account.Account }) {
           </tr>
           <tr>
             <td>Self</td>
-            <td align="right">{formatExp(selfBalance.result)} EXP</td>
+            <td align="right">{formatExp(selfBalance?.result)} EXP</td>
             <td align="right">
               <button
-                disabled={selfBalance.result === 0n || isPending}
+                disabled={selfBalance?.result === 0n || send.isPending}
                 type="submit"
               >
                 Send
@@ -141,12 +130,12 @@ export function Send({ account }: { account: Account.Account }) {
           </tr>
         </tbody>
       </table>
-      {receiptQuery.fetchStatus === 'fetching' && <p>Waiting for receipt...</p>}
-      {receiptQuery.isSuccess && (
+      {send.status === 'pending' && <p>Waiting for receipt...</p>}
+      {send.isSuccess && (
         <p>
           Transaction successful!{' '}
           <a
-            href={`${client.chain.blockExplorers.default.url}/tx/${hash}`}
+            href={`${client.chain.blockExplorers.default.url}/tx/${send.data}`}
             target="_blank"
             rel="noreferrer"
           >
